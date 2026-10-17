@@ -1,0 +1,11 @@
+bin/
+data/
+.git/
+.idea/
+.claude/
+deploy/
+docs/
+*.db
+*.db-wal
+*.db-shm
+Makefile.local

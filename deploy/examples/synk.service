@@ -1,0 +1,56 @@
+[Unit]
+Description=Money Tracks sync server (synk)
+After=network.target
+
+[Service]
+User=synk
+Group=synk
+Type=simple
+# Адреса и папка данных — в одном файле с synk-tui и CLI.
+EnvironmentFile=/opt/synk/synk.env
+ExecStart=/opt/synk/synk serve
+Restart=on-failure
+RestartSec=3
+
+# Файлы данных (sqlite, wal, фото) создаются 0600: финансовые данные
+# читает только пользователь synk.
+UMask=0077
+
+# Данные — только своя папка; всё остальное read-only.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/synk/data
+PrivateTmp=true
+PrivateDevices=true
+
+# Ядро, /proc, cgroups, хост — недоступны.
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+ProcSubset=pid
+
+# Никаких capabilities, setuid, namespaces, realtime.
+CapabilityBoundingSet=
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+
+# Сеть: слушает и ходит только по localhost (nginx и Prometheus рядом),
+# наружу процессу выходить незачем.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+[Install]
+WantedBy=multi-user.target

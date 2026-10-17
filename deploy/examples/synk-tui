@@ -1,0 +1,29 @@
+#!/bin/sh
+# synk-tui — терминальная консоль оператора synk (k9s-подобная).
+# Кладётся деплоем в /opt/synk/synk-tui; запуск: /opt/synk/synk-tui
+#
+# Запускается от пользователя synk, чтобы WAL-файлы SQLite, созданные
+# консолью, не остались принадлежать root и не заблокировали сервис.
+set -eu
+
+SYNK_HOME=${SYNK_HOME:-/opt/synk}
+# synk.env пишет деплой: SYNK_DATA, SYNK_LISTEN, SYNK_PUBLIC_URL — те же
+# значения видит systemd-юнит, так что адрес в блоке подключения не разойдётся.
+if [ -r "$SYNK_HOME/synk.env" ]; then
+    set -a
+    . "$SYNK_HOME/synk.env"
+    set +a
+fi
+SYNK_DATA=${SYNK_DATA:-$SYNK_HOME/data}
+SYNK_LISTEN=${SYNK_LISTEN:-127.0.0.1:8090}
+SYNK_METRICS_LISTEN=${SYNK_METRICS_LISTEN:-127.0.0.1:8091}
+SYNK_PUBLIC_URL=${SYNK_PUBLIC_URL:-}
+export SYNK_DATA SYNK_LISTEN SYNK_METRICS_LISTEN SYNK_PUBLIC_URL TERM
+
+if [ "$(id -u)" -eq 0 ] && id synk >/dev/null 2>&1; then
+    if command -v runuser >/dev/null 2>&1; then
+        exec runuser -u synk -- "$SYNK_HOME/synk" --data "$SYNK_DATA" --tui "$@"
+    fi
+    exec sudo -u synk --preserve-env=SYNK_DATA,SYNK_LISTEN,SYNK_METRICS_LISTEN,SYNK_PUBLIC_URL,SYNK_ACCOUNT_QUOTA_MB,TERM "$SYNK_HOME/synk" --data "$SYNK_DATA" --tui "$@"
+fi
+exec "$SYNK_HOME/synk" --data "$SYNK_DATA" --tui "$@"

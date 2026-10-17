@@ -1,0 +1,17 @@
+# docker compose up -d — сервер на 127.0.0.1:8090, наружу его отдаёт nginx
+# с TLS (deploy/examples/nginx-synk.conf). Данные — в томе synk-data.
+services:
+  synk:
+    build: .
+    image: synk:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      SYNK_PUBLIC_URL: https://sync.example.com
+      SYNK_ACCOUNT_QUOTA_MB: "1024"
+    volumes:
+      - synk-data:/data
+
+volumes:
+  synk-data:
